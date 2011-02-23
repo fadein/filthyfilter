@@ -1,0 +1,2 @@
+T:14315 Dlvl:7 Chaotic altar
+T:15084 Dlvl:11 Level has a vault
