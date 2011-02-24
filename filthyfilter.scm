@@ -1,15 +1,25 @@
 #!/usr/local/bin/csi -s
+;if hitting backspace produces  chars, do :set t_kb=
 
 (use srfi-1)
 (use regex)
 (use posix)
 (use fmt)
-(use format)
+(use getopt-long)
 
 (define *action-mute* 0)
 (define *action-skip* 1)
 
 (define cusses (regexp "that|talking|parkour|kid"))
+
+(define option-spec
+  `((cusses	"list of cusswords to filter out"
+			(single-char #\c) (value (optional WORDS)))
+	(help	"show help text" (single-char #\h))
+	(file	"name of subtitle file to process"
+			(single-char #\f)
+			(value (required FILE)
+				   (predicate ,file-exists?)))))
 
 ;srt parser
 (define filthyfilter
@@ -83,10 +93,19 @@
 			(end   (+ (* 3600 h2) (* 60 m2) s2)))
 		;(printf "start:~a end:~a~n" start end)
 		(printf "~a ~a ~a~n"
-				;(format "~A.~6,1,0,48A" start u1)
 				(fmt #f start "." (pad-char #\0 (pad/right 6 u1)))
 				(fmt #f end "." (pad-char #\0 (pad/right 6 u2)))
 				*action-mute*)))))
+
+(define opts (getopt-long  `(,(program-name) ,@(command-line-arguments)) option-spec))
+
+(if (assoc 'help opts)
+  (begin
+	(print (usage option-spec))
+	(exit 0)))
+
+(print opts)
+(exit 0)
 
 (filthyfilter "ElderBrianFalorParKour.srt" cusses)
 
