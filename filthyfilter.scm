@@ -7,22 +7,12 @@
 (use fmt)
 (use getopt-long)
 
+(define *version* "0.1")
 (define *action-mute* 0)
 (define *action-skip* 1)
 
-(define cusses (regexp "that|talking|parkour|kid"))
-
-(define option-spec
-  `((cusses	"list of cusswords to filter out"
-			(single-char #\c) (value (optional WORDS)))
-	(help	"show help text" (single-char #\h))
-	(file	"name of subtitle file to process"
-			(single-char #\f)
-			(value (required FILE)
-				   (predicate ,file-exists?)))))
-
 ;srt parser
-(define filthyfilter
+(define srt-parser
   (let ((blank? (lambda (l) (eq? 0 (string-length l))))
 		(digit-rx (regexp "^\\d+$"))
 		(time-rx (regexp "(\\d{2}):(\\d{2}):(\\d{2}),(\\d{3}) --> (\\d{2}):(\\d{2}):(\\d{2}),(\\d{3})")))
@@ -76,6 +66,8 @@
 			  (else
 				(error "Parse error in input file")))))))))
 
+(define filthyfilter srt-parser)
+
 (define output-edl
   (lambda (timestamps)
 	;(printf "edl line for ~a~n" timestamps)
@@ -97,17 +89,55 @@
 				(fmt #f end "." (pad-char #\0 (pad/right 6 u2)))
 				*action-mute*)))))
 
-(define opts (getopt-long  `(,(program-name) ,@(command-line-arguments)) option-spec))
 
-(if (assoc 'help opts)
+(define option-spec
+		 `((cusses	"list of cusswords to filter out"
+					(single-char #\c) (value (optional WORDS)))
+		   (help	"show help text" (single-char #\h))
+		   (file	"name of subtitle file to process"
+					(single-char #\f)
+					(value (required FILE)
+						   (predicate ,file-exists?)))
+		   (version	,(string-append "show program version (" *version* ")")
+					(single-char #\v))))
+
+;parse command-line options
+(define opts
+  (getopt-long
+	(cons (program-name) (command-line-arguments))
+	option-spec))
+
+;print usage info for --help option
+(and (assoc 'help opts)
   (begin
 	(print (usage option-spec))
 	(exit 0)))
 
-(print opts)
-(exit 0)
+;display program version
+(and (assoc 'version opts)
+  (begin
+	(print (program-name) " v" *version*)
+	(exit 0)))
 
-(filthyfilter "ElderBrianFalorParKour.srt" cusses)
+;let user specify cusses to mute
+(define cusses (regexp "\\b(cord|talking|parkour|kid)\\b" #t))
+(and-let* ((cuss-spec (assoc 'cusses opts)))
+  (set! cusses (regexp
+				 (string-join (string-tokenize (cdr cuss-spec)) "|")
+				 #t)))
+
+;get the name of the file to filter
+(define filename
+  (and-let* ((file-spec (assoc 'file opts))
+			 (name (cdr file-spec)))
+	name))
+
+(if filename
+  (filthyfilter filename cusses)
+  (begin
+	(print "Please supply a filename via the --file option")
+	(print (usage option-spec))
+	(exit 1)))
 
 ;10.632000 11.240000 1
 
