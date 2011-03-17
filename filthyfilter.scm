@@ -6,10 +6,15 @@
 (use posix)
 (use fmt)
 (use getopt-long)
+(use base64)
 
 (define *version* "0.1")
 (define *action-mute* 0)
 (define *action-skip* 1)
+
+;; default list of cusses to mute, base64 encrypted so your eyes don't melt
+;; by just reading the source
+(define *cusses* (regexp (base64-decode "XGIoKG1vdGhlcik/Zit1K2M/aytcdyp8c2hpdFx3KnxkYW0obXxuKWl0fChkdW1iKT9hc3MoaG9sZSk/fGN1bnR8Yml0Y2h8Z29kZGFtXHcqfHBlbmlzfHZhZ2luYSlcYg==") #t))
 
 ;srt parser
 (define srt-parser
@@ -89,7 +94,7 @@
 				(fmt #f end "." (pad-char #\0 (pad/right 6 u2)))
 				*action-mute*)))))
 
-
+;;specify options to accept for getopt
 (define option-spec
 		 `((cusses	"list of cusswords to filter out"
 					(single-char #\c) (value (optional WORDS)))
@@ -98,6 +103,8 @@
 					(single-char #\f)
 					(value (required FILE)
 						   (predicate ,file-exists?)))
+		   (encrypt "encrypt plaintext cusses so source isn't offensive"
+					(single-char #\e) (value (required REGEXP)))
 		   (version	,(string-append "show program version (" *version* ")")
 					(single-char #\v))))
 
@@ -120,11 +127,18 @@
 	(exit 0)))
 
 ;let user specify cusses to mute
-(define cusses (regexp "\\b(cord|talking|parkour|kid)\\b" #t))
 (and-let* ((cuss-spec (assoc 'cusses opts)))
-  (set! cusses (regexp
+  (set! *cusses* (regexp
 				 (string-join (string-tokenize (cdr cuss-spec)) "|")
 				 #t)))
+
+(and-let* ((cuss-spec (assoc 'encrypt opts))
+		   (pre (cdr cuss-spec))
+		   (crypted (base64-encode pre)))
+  (print "I hope you doubled up on the backslashes!")
+  (print "Paste this back into the top of this program:")
+  (printf "(define *cusses* (regexp (base64-decode \"~a\") #t))~n" crypted)
+  (exit 0))
 
 ;get the name of the file to filter
 (define filename
@@ -133,7 +147,7 @@
 	name))
 
 (if filename
-  (filthyfilter filename cusses)
+  (filthyfilter filename *cusses*)
   (begin
 	(print "Please supply a filename via the --file option")
 	(print (usage option-spec))
