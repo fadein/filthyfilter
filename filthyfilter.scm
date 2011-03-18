@@ -34,6 +34,7 @@
 		filename
 		(lambda ()
 		  (let loop ((line (read-line))
+					 (line-num 1)
 					 (state 'digit)
 					 (timestamps #f))
 
@@ -47,12 +48,13 @@
 			  ;sequence marker
 			  ((and (eq? state 'digit)
 					(string-match digit-rx line))
-			   (loop (read-line) 'time #f))
+			   (loop (read-line) (add1 line-num) 'time #f))
 
 			  ;time range for subtitle - keep it
 			  ((and (eq? state 'time)
 					(string-match time-rx line))
 			   (loop (read-line)
+					 (add1 line-num)
 					   'text
 					   (string-match time-rx line)))
 
@@ -61,15 +63,18 @@
 			  ((eq? state 'text)
 			   (and (string-search cusses line)
 					(output-edl timestamps))
-			   (loop (read-line) 'blank #f))
+			   (loop (read-line) (add1 line-num) 'blank #f))
 
 			  ;on the blank line between subs
 			  ((and (eq? state 'blank)
 					(blank? line))
-			   (loop (read-line) 'digit #f))
+			   (loop (read-line) (add1 line-num) 'digit #f))
 
 			  (else
-				(error "Parse error in input file")))))))))
+				(error (fmt #f "Parse error in input file at line "
+							line-num nl
+							"Expected state: " (symbol->string state) nl
+							"Line:" nl (space-to 2) line))))))))))
 
 (define filthyfilter srt-parser)
 
