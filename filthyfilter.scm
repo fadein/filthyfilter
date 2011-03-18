@@ -68,12 +68,12 @@
 
 				 ;if this line has a cuss, output EDL line, goto cuss
 				 ((string-search cusses line)
-					(output-edl timestamps)
-					(loop (read-line) (add1 line-num) 'cuss #f))
+				  (output-edl timestamps)
+				  (loop (read-line) (add1 line-num) 'cuss #f))
 
 				 ;otherwise, do this again on the next line
 				 (else
-				   (loop (read-line) (add1 line-num) 'text #f))))
+				   (loop (read-line) (add1 line-num) 'text timestamps))))
 
 			  ;on text for subtitle - but we already wrote an EDL for it
 			  ((eq? state 'cuss)
