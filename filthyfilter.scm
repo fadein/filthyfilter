@@ -19,7 +19,7 @@
 ;subtitles file parser - .srt format
 (define srt-parser
   (let ((blank? (lambda (l) (eq? 0 (string-length l))))
-		(digit-rx (regexp "^\\d+$"))
+		(seq-rx (regexp "^\\d+$"))
 		(time-rx (regexp "(\\d{2}):(\\d{2}):(\\d{2}),(\\d{3}) --> (\\d{2}):(\\d{2}):(\\d{2}),(\\d{3})")))
 
 	;open the original .srt file and emit an edl file with the
@@ -34,10 +34,10 @@
 		(lambda ()
 		  (let loop ((line (read-line))
 					 (line-num 1)
-					 (state 'digit)
+					 (state 'seq)
 					 (timestamps #f))
 
-			(printf "line #~a state:~a ~a~n" line-num (symbol->string state) line)
+			;(printf "line #~a state:~a ~a~n" line-num (symbol->string state) line)
 
 			(cond
 
@@ -46,8 +46,8 @@
 			   #t)
 
 			  ;sequence marker
-			  ((and (eq? state 'digit)
-					(string-match digit-rx line))
+			  ((and (eq? state 'seq)
+					(string-match seq-rx line))
 			   (loop (read-line) (add1 line-num) 'time #f))
 
 			  ;time range for subtitle - keep it
@@ -89,7 +89,7 @@
 			  ;on the blank line between subs
 			  ((and (eq? state 'blank)
 					(blank? line))
-			   (loop (read-line) (add1 line-num) 'digit #f))
+			   (loop (read-line) (add1 line-num) 'seq #f))
 
 			  (else
 				(error (fmt #f "Parse error in input file at line "
