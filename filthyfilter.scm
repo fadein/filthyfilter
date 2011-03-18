@@ -14,7 +14,7 @@
 
 ;; default list of cusses to mute, base64 encrypted so your eyes don't melt
 ;; by just reading the source
-(define *cusses* (regexp (base64-decode "XGIoKG1vdGhlcik/Zit1K2M/aytcdyp8c2hpdFx3KnxkYW0obXxuKWl0fChkdW1iKT9hc3MoaG9sZSk/fGN1bnR8Yml0Y2h8Z29kZGFtXHcqfHBlbmlzfHZhZ2luYSlcYg==") #t))
+(define *cusses* (base64-decode "XGIoKG1vdGhlcik/Zit1K2M/aytcdyp8c2hpdFx3KnxkYW0obXxuKWl0fChkdW1iKT9hc3MoaG9sZSk/fGN1bnR8Yml0Y2h8Z29kZGFtXHcqfHBlbmlzfHZhZ2luYSlcYg=="))
 
 ;srt parser
 (define srt-parser
@@ -110,6 +110,8 @@
 						   (predicate ,file-exists?)))
 		   (encrypt "encrypt plaintext cusses so source isn't offensive"
 					(single-char #\e) (value (required REGEXP)))
+		   (dump    "print encrypted cusses in plaintext. OFFENSIVE"
+					(single-char #\d))
 		   (version	,(string-append "show program version (" *version* ")")
 					(single-char #\v))))
 
@@ -131,11 +133,18 @@
 	(print (program-name) " v" *version*)
 	(exit 0)))
 
-;let user specify cusses to mute
-(and-let* ((cuss-spec (assoc 'cusses opts)))
-  (set! *cusses* (regexp
-				 (string-join (string-tokenize (cdr cuss-spec)) "|")
-				 #t)))
+(and (assoc 'dump opts)
+	 (begin
+	   (print *cusses*)
+	   (exit 0)))
+
+;let user specify cusses to mute on cmdline
+(let ((cuss-spec (assoc 'cusses opts)))
+  (if cuss-spec
+	(set! *cusses* (regexp
+					 (string-join (string-tokenize (cdr cuss-spec)) "|")
+					 #t))
+	(set! *cusses* (regexp *cusses* #t))))
 
 (and-let* ((cuss-spec (assoc 'encrypt opts))
 		   (pre (cdr cuss-spec))
