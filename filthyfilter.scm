@@ -16,12 +16,11 @@
 ;; by just reading the source
 (define *cusses* (base64-decode "XGIoKG1vdGhlcik/Zit1K2M/aytcdyp8c2hpdFx3KnxkYW0obXxuKWl0fChkdW1iKT9hc3MoaG9sZSk/fGN1bnR8Yml0Y2h8Z29kZGFtXHcqfHBlbmlzfHZhZ2luYSlcYg=="))
 
-;srt parser
+;subtitles file parser - .srt format
 (define srt-parser
   (let ((blank? (lambda (l) (eq? 0 (string-length l))))
 		(digit-rx (regexp "^\\d+$"))
 		(time-rx (regexp "(\\d{2}):(\\d{2}):(\\d{2}),(\\d{3}) --> (\\d{2}):(\\d{2}):(\\d{2}),(\\d{3})")))
-
 
 	;open the original .srt file and emit an edl file with the
 	;cusses muted out.
@@ -38,7 +37,8 @@
 					 (state 'digit)
 					 (timestamps #f))
 
-			;(printf "line:~a~n" line)
+			(printf "line #~a state:~a ~a~n" line-num (symbol->string state) line)
+
 			(cond
 
 			  ;end of input file - done
@@ -58,12 +58,33 @@
 					   'text
 					   (string-match time-rx line)))
 
-			  ;text for subtitle - if it has a cuss write
+			  ;on text for subtitle - if it has a cuss write
 			  ;a line of edl
 			  ((eq? state 'text)
-			   (and (string-search cusses line)
-					(output-edl timestamps))
-			   (loop (read-line) (add1 line-num) 'blank #f))
+			   (cond
+				 ;if this line is blank, go into blank state
+				 ((blank? line)
+				  (loop line line-num 'blank #f))
+
+				 ;if this line has a cuss, output EDL line, goto cuss
+				 ((string-search cusses line)
+					(output-edl timestamps)
+					(loop (read-line) (add1 line-num) 'cuss #f))
+
+				 ;otherwise, do this again on the next line
+				 (else
+				   (loop (read-line) (add1 line-num) 'text #f))))
+
+			  ;on text for subtitle - but we already wrote an EDL for it
+			  ((eq? state 'cuss)
+			   (cond
+				 ;if this line is blank, go into blank state
+				 ((blank? line)
+				  (loop line line-num 'blank #f))
+
+				 ;otherwise, do this again on the next line
+				 (else
+				   (loop (read-line) (add1 line-num) 'cuss #f))))
 
 			  ;on the blank line between subs
 			  ((and (eq? state 'blank)
@@ -78,6 +99,8 @@
 
 (define filthyfilter srt-parser)
 
+;; output a line of EDL
+;; accepts list of timestamp elements
 (define output-edl
   (lambda (timestamps)
 	;(printf "edl line for ~a~n" timestamps)
