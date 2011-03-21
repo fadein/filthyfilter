@@ -2,6 +2,7 @@
 ;if hitting backspace produces  chars, do :set t_kb=
 
 (use srfi-1)
+(use srfi-13)
 (use regex)
 (use posix)
 (use fmt)
@@ -14,7 +15,8 @@
 
 ;; default list of cusses to mute, base64 encrypted so your eyes don't melt
 ;; by just reading the source
-(define *cusses* (base64-decode "XGIoKG1vdGhlcik/Zit1K2M/aytcdyp8c2hpdFx3KnxkYW0obXxuKWl0fChkdW1iKT9hc3MoaG9sZSk/fGN1bnR8Yml0Y2h8Z29kZGFtXHcqfHBlbmlzfHZhZ2luYSlcYg=="))
+(define *cusses* (base64-decode
+				   "XGIoKG1vdGhlcik/Zit1K2M/aytcdyp8c2hpdFx3KnxkYW0obXxuKWl0fChkdW1iKT9hc3MoaG9sZSk/fGN1bnR8Yml0Y2h8Z29kZGFtXHcqfHBlbmlzfHZhZ2luYSlcYg=="))
 
 ;subtitles file parser - .srt format
 (define srt-parser
@@ -26,11 +28,9 @@
 	;cusses muted out.
 	;next phase of project: edit the .srt to make cusses look like
 	;#$%@&! in the subtitles in addition to emitting an edl
-	(lambda (filename cusses)
-	  ;todo - turn string of cusses into a regex with alternations, or 
-	  ;something
+	(lambda (temp-subfile edl-file)
 	  (with-input-from-file
-		filename
+		*filename*
 		(lambda ()
 		  (let loop ((line (read-line))
 					 (line-num 1)
@@ -67,7 +67,7 @@
 				  (loop line line-num 'blank #f))
 
 				 ;if this line has a cuss, output EDL line, goto cuss
-				 ((string-search cusses line)
+				 ((string-search *cusses* line)
 				  (output-edl timestamps)
 				  (loop (read-line) (add1 line-num) 'cuss #f))
 
@@ -178,18 +178,60 @@
   (exit 0))
 
 ;get the name of the file to filter
-(define filename
+(define *filename*
   (and-let* ((file-spec (assoc 'file opts))
 			 (name (cdr file-spec)))
 	name))
 
-(if filename
-  (filthyfilter filename *cusses*)
+(define parse-dispatch
+  (lambda ()
+	(let-values (((filename-root extension) (split-extension *filename*)))
+
+	  (let* ((parser (which-parser? extension))
+			 (edl-file (make-edl-filename filename-root))
+			 (temp-subfile (make-temp-filename *filename*)))
+		(if (not (procedure? parser))
+		  (error (fmt #f "Could not identify parse procedure for file " *filename*)))
+
+		(parser temp-subfile edl-file)
+		;(remove *filename*)
+		;(rename temp-subfile to *filename*)
+		;tell user what we did
+		))))
+
+;split a file's extension from it's name
+;multiple return values
+(define split-extension
+  (lambda (filename)
+	(let* ((extension-index (string-index-right filename #\.))
+		   (head (string-copy filename 0 extension-index))
+		   (ext  (string-copy filename (+ 1 extension-index))))
+	  (values head ext))))
+
+;add the .edl extension to the input
+(define make-edl-filename
+  (lambda (name)
+	(string-concatenate `(,name ".edl"))))
+
+;generate a temporary filename by prepending a . and appending .tmp
+(define make-temp-filename
+  (lambda (name)
+	(string-concatenate `("." ,name ".tmp"))))
+
+;decide which parser function to invoke based solely on the extension of the input file
+(define which-parser?
+  (lambda (type)
+	(let ((res (assoc type `(("srt" . ,srt-parser)))))
+	  (if (not res)
+		(error (string-concatenate `("Could not find a parser for " ,type " files"))))
+	  (cdr res))))
+
+
+(if *filename*
+  (parse-dispatch)
   (begin
 	(print "Please supply a filename via the --file option")
 	(print (usage option-spec))
 	(exit 1)))
-
-;10.632000 11.240000 1
 
 ; vim:ft=chicken:
