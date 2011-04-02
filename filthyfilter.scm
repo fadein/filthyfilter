@@ -97,6 +97,32 @@
 							"Expected state: " (symbol->string state) nl
 							"Line:" nl (space-to 2) line))))))))))
 
+;return a new string of punctuation characters of the given length
+(define make-random-cuss-string
+  (let* ((cuss-chars (list->vector (list #\! #\@ #\# #\$ #\% #\& #\*)))
+		 (num-chars (vector-length cuss-chars))
+		 (shuffle-vector
+		   (lambda (v)
+			 (do (( i 0 (add1 i)))
+			   ((= i (vector-length v)))
+			   (let*
+				 ((j (random (vector-length v)))
+				  (t (vector-ref v j)))
+				 (vector-set! v j (vector-ref v i))
+				 (vector-set! v i t))))))
+	(lambda (len)
+	  (let shuffle-loop ((len len) (accum '()))
+		(if (< len 0)
+		  (list->string accum)
+		  (begin
+			(shuffle-vector cuss-chars)
+			;select len of them, accumulate into accum
+			(do
+			  ((i 0 (add1 i)))
+			  ((or (= i len) (= i num-chars)))
+			  (set! accum (append accum (list (vector-ref cuss-chars i)))))
+			(shuffle-loop (- len num-chars) accum)))))))
+
 (define filthyfilter srt-parser)
 
 ;; output a line of EDL
@@ -234,4 +260,5 @@
 	(print (usage option-spec))
 	(exit 1)))
 
-; vim:ft=chicken:
+; vim:filetype=chicken expandtab tabstop=4 textwidth=74:
+
