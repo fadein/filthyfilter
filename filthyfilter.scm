@@ -10,8 +10,8 @@
 (use base64)
 
 (define *version* "0.1")
-(define *action-mute* 0)
-(define *action-skip* 1)
+(define *action-mute* 1)
+(define *action-skip* 0)
 
 ;; default list of cusses to mute, base64 encrypted so your eyes don't melt
 ;; by just reading the source
