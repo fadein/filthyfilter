@@ -15,8 +15,8 @@
 
 ;; default list of cusses to mute, base64 encrypted so your eyes don't melt
 ;; by just reading the source
-(define *cusses* (base64-decode
-				   "XGIoKG1vdGhlcik/Zit1K2M/aytcdyp8c2hpdFx3KnxkYW0obXxuKWl0fChkdW1iKT9hc3MoaG9sZSk/fGN1bnR8Yml0Y2h8Z29kZGFtXHcqfHBlbmlzfHZhZ2luYSlcYg=="))
+(define *cusses* (base64-decode "XGIoKG1vdGhlcik/Zit1K2M/aytcdyp8c2hpdFx3KnwoZ29kPyk/ZGFtKG18bilpdHwoZHVtYik/YXNzKGhvbGUpP3xjdW50fGJpdGNofHBlbmlzfHZhZ2luYXxnb2R8amVzdXN8Y2hyaXN0KVxi"))
+
 
 ;subtitles file parser - .srt format
 (define srt-parser
@@ -200,7 +200,7 @@
 		   (crypted (base64-encode pre)))
   (print "I hope you doubled up on the backslashes!")
   (print "Paste this back into the top of this program:")
-  (printf "(define *cusses* (regexp (base64-decode \"~a\") #t))~n" crypted)
+  (printf "(define *cusses* (base64-decode \"~a\"))~n" crypted)
   (exit 0))
 
 ;get the name of the file to filter
