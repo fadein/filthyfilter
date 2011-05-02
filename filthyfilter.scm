@@ -123,6 +123,25 @@
 			  (set! accum (append accum (list (vector-ref cuss-chars i)))))
 			(shuffle-loop (- len num-chars) accum)))))))
 
+;return a sanitized line of dialog
+(define replace-all-cusses
+  (lambda (input-string)
+    (fold
+      ;kons
+      (lambda (span work-in-progress)
+        (let ((start (car span)) (end (cadr span)))
+          (string-replace work-in-progress
+                          (make-random-cuss-string (- end start))
+                          start end)))
+      ;knil
+      input-string
+      ;clist1
+      (let loop ((start 0) (extents '()))
+        (let ((result (string-search-positions *reg* input-string start)))
+          (if result
+            (loop (cadar result) (cons (car result) extents))
+            extents))))))
+
 (define filthyfilter srt-parser)
 
 ;; output a line of EDL
