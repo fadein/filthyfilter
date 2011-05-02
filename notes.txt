@@ -1,6 +1,0 @@
-using mplayer with srt file:
-mplayer dvd://<track_number> -sub subtitles.srt
-
-now, WTF track_number?
-
-http://www.opensubtitles.org/en
