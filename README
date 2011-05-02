@@ -3,8 +3,3 @@ give the srt file the same name as the movie file, and place it alongside the mo
 
 http://www.mplayerhq.hu/DOCS/HTML/en/edl.html
 
-TODO:
-write a filthyfilter script that greps the .srt for swears, outputs the time offsets for that line of text (calculated from the beginning time of the next line of text, or 3 seconds, whichever is shorter?) as an EDL file entry.
-
-Then sed the swear with asterisks (bouns points: random punctuations) and re-write it to the orig .srt
-
