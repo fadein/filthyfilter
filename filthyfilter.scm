@@ -8,6 +8,7 @@
 (use fmt)
 (use getopt-long)
 (use base64)
+(use files)
 
 (define *version* "0.1")
 (define *action-mute* 1)
@@ -17,85 +18,97 @@
 ;; by just reading the source
 (define *cusses* (base64-decode "XGIoKG1vdGhlcik/Zit1K2M/aytcdyp8c2hpdFx3KnwoZ29kPyk/ZGFtKG18bilpdHwoZHVtYik/YXNzKGhvbGUpP3xjdW50fGJpdGNofHBlbmlzfHZhZ2luYXxnb2R8amVzdXN8Y2hyaXN0KVxi"))
 
-
 ;subtitles file parser - .srt format
 (define srt-parser
   (let ((blank? (lambda (l) (eq? 0 (string-length l))))
-		(seq-rx (regexp "^\\d+$"))
-		(time-rx (regexp "(\\d{2}):(\\d{2}):(\\d{2}),(\\d{3}) --> (\\d{2}):(\\d{2}):(\\d{2}),(\\d{3})")))
+        (seq-rx (regexp "^\\d+$"))
+        (time-rx (regexp "(\\d{2}):(\\d{2}):(\\d{2}),(\\d{3}) --> (\\d{2}):(\\d{2}):(\\d{2}),(\\d{3})")))
 
-	;open the original .srt file and emit an edl file with the
-	;cusses muted out.
-	;next phase of project: edit the .srt to make cusses look like
-	;#$%@&! in the subtitles in addition to emitting an edl
-	(lambda (temp-subfile edl-file)
-	  (with-input-from-file
-		*filename*
-		(lambda ()
-		  (let loop ((line (read-line))
-					 (line-num 1)
-					 (state 'seq)
-					 (timestamps #f))
+    ;open the original .srt file and emit an edl file with the
+    ;cusses muted out.
+    ;next phase of project: edit the .srt to make cusses look like
+    ;#$%@&! in the subtitles in addition to emitting an edl
+    (lambda (temp-subfile edl-file)
+      (let ((cuss-count 0)
+            (subs-out (open-output-file temp-subfile))
+            (edl-out (open-output-file edl-file)))
+        (with-input-from-file
+          *filename*
+          (lambda ()
+            (let loop ((line (read-line))
+                       (line-num 1)
+                       (state 'seq)
+                       (timestamps #f))
 
-			;(printf "line #~a state:~a ~a~n" line-num (symbol->string state) line)
+              ;(printf "line #~a state:~a ~a~n" line-num (symbol->string state) line)
 
-			(cond
+              (cond
 
-			  ;end of input file - done
-			  ((eof-object? line)
-			   #t)
+                ;end of input file - done
+                ((eof-object? line)
+                 #t)
 
-			  ;sequence marker
-			  ((and (eq? state 'seq)
-					(string-match seq-rx line))
-			   (loop (read-line) (add1 line-num) 'time #f))
+                ;sequence marker
+                ((and (eq? state 'seq)
+                      (string-match seq-rx line))
+                 (fprintf subs-out "~a~n" line)
+                 (loop (read-line) (add1 line-num) 'time #f))
 
-			  ;time range for subtitle - keep it
-			  ((and (eq? state 'time)
-					(string-match time-rx line))
-			   (loop (read-line)
-					 (add1 line-num)
-					   'text
-					   (string-match time-rx line)))
+                ;time range for subtitle - keep it
+                ((and (eq? state 'time)
+                      (string-match time-rx line))
+                 (fprintf subs-out "~a~n" line)
+                 (loop (read-line)
+                       (add1 line-num)
+                       'text
+                       (string-match time-rx line)))
 
-			  ;on text for subtitle - if it has a cuss write
-			  ;a line of edl
-			  ((eq? state 'text)
-			   (cond
-				 ;if this line is blank, go into blank state
-				 ((blank? line)
-				  (loop line line-num 'blank #f))
+                ;on text for subtitle - if it has a cuss write
+                ;a line of edl
+                ((eq? state 'text)
+                 (cond
+                   ;if this line is blank, go into blank state
+                   ((blank? line)
+                    (loop line line-num 'blank #f))
 
-				 ;if this line has a cuss, output EDL line, goto cuss
-				 ((string-search *cusses* line)
-				  (output-edl timestamps)
-				  (loop (read-line) (add1 line-num) 'cuss #f))
+                   ;if this line has a cuss, output EDL line, goto cuss
+                   ((string-search *cusses* line)
+                    (output-edl timestamps edl-out)
+                    (set! cuss-count (add1 cuss-count))
+                    (fprintf subs-out "~a~n" (replace-all-cusses line))
+                    (loop (read-line) (add1 line-num) 'cuss #f))
 
-				 ;otherwise, do this again on the next line
-				 (else
-				   (loop (read-line) (add1 line-num) 'text timestamps))))
+                   ;otherwise, do this again on the next line
+                   (else
+                     (fprintf subs-out "~a~n" line)
+                     (loop (read-line) (add1 line-num) 'text timestamps))))
 
-			  ;on text for subtitle - but we already wrote an EDL for it
-			  ((eq? state 'cuss)
-			   (cond
-				 ;if this line is blank, go into blank state
-				 ((blank? line)
-				  (loop line line-num 'blank #f))
+                ;on text for subtitle - but we already wrote an EDL for it
+                ((eq? state 'cuss)
+                 (cond
+                   ;if this line is blank, go into blank state
+                   ((blank? line)
+                    (loop line line-num 'blank #f))
 
-				 ;otherwise, do this again on the next line
-				 (else
-				   (loop (read-line) (add1 line-num) 'cuss #f))))
+                   ;otherwise, do this again on the next line
+                   (else
+                     (loop (read-line) (add1 line-num) 'cuss #f))))
 
-			  ;on the blank line between subs
-			  ((and (eq? state 'blank)
-					(blank? line))
-			   (loop (read-line) (add1 line-num) 'seq #f))
+                ;on the blank line between subs
+                ((and (eq? state 'blank)
+                      (blank? line))
+                 (fprintf subs-out "~a~n" line)
+                 (loop (read-line) (add1 line-num) 'seq #f))
 
-			  (else
-				(error (fmt #f "Parse error in input file at line "
-							line-num nl
-							"Expected state: " (symbol->string state) nl
-							"Line:" nl (space-to 2) line))))))))))
+                (else
+                  (error (fmt #f "Parse error in input file at line "
+                              line-num nl
+                              "Expected state: " (symbol->string state) nl
+                              "Line:" nl (space-to 2) line)))))))
+        ;close the output ports
+        (close-output-port subs-out)
+        (close-output-port edl-out)
+        cuss-count))))
 
 ;return a new string of punctuation characters of the given length
 (define make-random-cuss-string
@@ -137,17 +150,16 @@
       input-string
       ;clist1
       (let loop ((start 0) (extents '()))
-        (let ((result (string-search-positions *reg* input-string start)))
+        (let ((result (string-search-positions *cusses* input-string start)))
           (if result
             (loop (cadar result) (cons (car result) extents))
             extents))))))
 
-(define filthyfilter srt-parser)
-
-;; output a line of EDL
+;; output a line of EDL to a port
 ;; accepts list of timestamp elements
+;; and a port to write them out to
 (define output-edl
-  (lambda (timestamps)
+  (lambda (timestamps port)
 	;(printf "edl line for ~a~n" timestamps)
 	(let ((h1 (string->number (list-ref timestamps 1)))
 		  (m1 (string->number (list-ref timestamps 2)))
@@ -162,7 +174,7 @@
 	  (let ((start (+ (* 3600 h1) (* 60 m1) s1))
 			(end   (+ (* 3600 h2) (* 60 m2) s2)))
 		;(printf "start:~a end:~a~n" start end)
-		(printf "~a ~a ~a~n"
+		(fprintf port "~a ~a ~a~n"
 				(fmt #f start "." (pad-char #\0 (pad/right 6 u1)))
 				(fmt #f end "." (pad-char #\0 (pad/right 6 u2)))
 				*action-mute*)))))
@@ -232,17 +244,23 @@
   (lambda ()
 	(let-values (((filename-root extension) (split-extension *filename*)))
 
-	  (let* ((parser (which-parser? extension))
+	  (let* ((parser (choose-parser extension))
 			 (edl-file (make-edl-filename filename-root))
 			 (temp-subfile (make-temp-filename *filename*)))
 		(if (not (procedure? parser))
 		  (error (fmt #f "Could not identify parse procedure for file " *filename*)))
 
-		(parser temp-subfile edl-file)
-		;(remove *filename*)
-		;(rename temp-subfile to *filename*)
-		;tell user what we did
-		))))
+        (let ((cuss-count (parser temp-subfile edl-file)))
+          (cond
+            ((> cuss-count 0)
+              (delete-file* *filename*)
+              (file-move temp-subfile *filename*)
+              (printf "Filtered ~a cusses from ~a~nCreated ~a~n"
+                      cuss-count *filename* edl-file))
+            (else
+              (delete-file* temp-subfile)
+              (delete-file* edl-file)
+              (printf "No cusses in this movie!~n"))))))))
 
 ;split a file's extension from it's name
 ;multiple return values
@@ -264,7 +282,7 @@
 	(string-concatenate `("." ,name ".tmp"))))
 
 ;decide which parser function to invoke based solely on the extension of the input file
-(define which-parser?
+(define choose-parser
   (lambda (type)
 	(let ((res (assoc type `(("srt" . ,srt-parser)))))
 	  (if (not res)
