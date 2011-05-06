@@ -181,7 +181,7 @@
 
 ;;specify options to accept for getopt
 (define option-spec
-		 `((cusses	"list of cusswords to filter out"
+		 `((cusses	"regex of cusswords to filter out"
 					(single-char #\c) (value (optional WORDS)))
 		   (help	"show help text" (single-char #\h))
 		   (file	"name of subtitle file to process"
