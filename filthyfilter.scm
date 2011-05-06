@@ -16,7 +16,7 @@
 
 ;; default list of cusses to mute, base64 encrypted so your eyes don't melt
 ;; by just reading the source
-(define *cusses* (base64-decode "XGIoKG1vdGhlcik/Zit1K2M/aytcdyp8c2hpdFx3KnwoZ29kPyk/ZGFtKG18bilpdHwoZHVtYik/YXNzKGhvbGUpP3xjdW50fGJpdGNofHBlbmlzfHZhZ2luYXxnb2R8amVzdXN8Y2hyaXN0KVxi"))
+(define *cusses* (base64-decode "XGIoYmFzdGFyZHwobW90aGVyKT9mK3UrYz9rK1x3KnxzaGl0XHcqfChnb2Q/KT9kYW0obXxuKWl0fChkdW1iKT9hc3MoaG9sZSk/fGN1bnR8Yml0Y2h8cGVuaXN8dmFnaW5hfCgob2gsP3xteSlccyspZ29kfGplc3VzfGNocmlzdClcYg=="))
 
 ;subtitles file parser - .srt format
 (define srt-parser
