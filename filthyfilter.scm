@@ -1,16 +1,21 @@
-#!/usr/local/bin/csi -s
-;if hitting backspace produces  chars, do :set t_kb=
+#!/bin/env -S csi -s
 
-(use srfi-1)
-(use srfi-13)
-(use regex)
-(use posix)
-(use fmt)
-(use getopt-long)
-(use base64)
-(use files)
+(import srfi-1)
+(import srfi-13)
+(import regex)
+(import fmt)
+(import getopt-long)
+(import base64)
+(import (chicken random))
+(import (chicken file))
+(import (chicken format))
+(import (chicken io))
+(import (chicken process-context))
 
-(define *version* "0.1")
+; (import posix)
+; (import files)
+
+(define *version* "0.2")
 (define *action-mute* 1)
 (define *action-skip* 0)
 
@@ -119,7 +124,7 @@
 			 (do (( i 0 (add1 i)))
 			   ((= i (vector-length v)))
 			   (let*
-				 ((j (random (vector-length v)))
+				 ((j (pseudo-random-integer (vector-length v)))
 				  (t (vector-ref v j)))
 				 (vector-set! v j (vector-ref v i))
 				 (vector-set! v i t))))))
@@ -254,7 +259,7 @@
           (cond
             ((> cuss-count 0)
               (delete-file* *filename*)
-              (file-move temp-subfile *filename*)
+              (rename-file temp-subfile *filename*)
               (printf "Filtered ~a cusses from ~a~nCreated ~a~n"
                       cuss-count *filename* edl-file))
             (else
@@ -297,5 +302,4 @@
 	(print (usage option-spec))
 	(exit 1)))
 
-; vim:filetype=chicken expandtab tabstop=4 textwidth=74:
-
+; vim:filetype=scheme expandtab tabstop=4 textwidth=74:
