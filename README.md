@@ -17,3 +17,11 @@ http://www.mplayerhq.hu/DOCS/HTML/en/edl.html
  -d, --dump               print encrypted cusses in plaintext. OFFENSIVE
  -v, --version            show program version (0.2)
 ```
+
+## TODO:
+
+*   When a line of dialog is split across two text lines and the top line has a
+    cuss, the 2nd line is deleted from the output.
+
+    Top Gun is an example of an SRT that does this.  Use VimDiff to compare the
+    clean file with the original to identify when this happens.

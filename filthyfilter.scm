@@ -21,7 +21,7 @@
 
 ;; default list of cusses to mute, base64 encrypted so your eyes don't melt
 ;; by just reading the source
-(define *cusses* (base64-decode "XGIoYmFzdGFyZHwobW90aGVyKT9mK3UrYz9rK1x3KnxzaGl0XHcqfChnb2Q/KT9kYW0obXxuKShpdCk/fChkdW1iKT9hc3MoaG9sZSk/fGN1bnR8Yml0Y2h8cGVuaXN8dmFnaW5hfCgob2gsP3xteSlccyspZ29kfGplc3VzfGNocmlzdClcYg=="))
+(define *cusses* (base64-decode "XGIoYmFzdGFyZHwobW90aGVyKT9mK3UrYz9rK1x3KnwoYnVsbCk/c2hpdFx3KnwoZ29kPyk/ZGFtKG18bikoaXQpP3woZHVtYik/YXNzKGhvbGUpP3xjdW50fGJpdGNofHBlbmlzfHZhZ2luYXwoKG9oLD98bXkpXHMrKWdvZHxqZXN1c3xjaHJpc3QpXGI="))
 
 ;subtitles file parser - .srt format
 (define srt-parser
@@ -31,8 +31,6 @@
 
     ;open the original .srt file and emit an edl file with the
     ;cusses muted out.
-    ;next phase of project: edit the .srt to make cusses look like
-    ;#$%@&! in the subtitles in addition to emitting an edl
     (lambda (temp-subfile edl-file)
       (let ((cuss-count 0)
             (subs-out (open-output-file temp-subfile))
