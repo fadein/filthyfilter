@@ -12,10 +12,8 @@
 (import (chicken io))
 (import (chicken process-context))
 
-; (import posix)
-; (import files)
 
-(define *version* "0.2")
+(define *version* "0.3")
 (define *action-mute* 1)
 (define *action-skip* 0)
 
@@ -79,23 +77,12 @@
                     (output-edl timestamps edl-out)
                     (set! cuss-count (add1 cuss-count))
                     (fprintf subs-out "~a~n" (replace-all-cusses line))
-                    (loop (read-line) (add1 line-num) 'cuss #f))
+                    (loop (read-line) (add1 line-num) 'text timestamps))
 
                    ;otherwise, do this again on the next line
                    (else
                      (fprintf subs-out "~a~n" line)
                      (loop (read-line) (add1 line-num) 'text timestamps))))
-
-                ;on text for subtitle - but we already wrote an EDL for it
-                ((eq? state 'cuss)
-                 (cond
-                   ;if this line is blank, go into blank state
-                   ((blank? line)
-                    (loop line line-num 'blank #f))
-
-                   ;otherwise, do this again on the next line
-                   (else
-                     (loop (read-line) (add1 line-num) 'cuss #f))))
 
                 ;on the blank line between subs
                 ((and (eq? state 'blank)
